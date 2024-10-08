@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    #confirmation {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background-color: rgba(34, 197, 94, 0.9);
+      color: white;
+      border-radius: 5px;
+      display: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100">
+
+  <div id="confirmation">Ação realizada com sucesso!</div>
+
+  <div class="container mx-auto p-8 max-w-xl bg-white shadow-lg mt-10">
+    <h1 class="text-3xl font-bold mb-5 text-center"><%= title %></h1>
+    <h2 class="text-xl font-semibold mb-4">CADASTRO</h2>
+    
+    <!-- Cadastro Form -->
+    <form id="saveForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium">Nome:</label>
+        <input required ="text" name="name" id="name" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium">Idade:</label>
+        <input required type="number" name="age" id="age" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+      </div>
+
+      <div>
+        <button type="button" onclick="saveCustomer()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700">
+          Salvar
+        </button>
+      </div>
+    </form>
+
+    <h2 class="text-xl font-semibold mt-10 mb-4">LISTAGEM</h2>
+    <ul id="customerList" class="space-y-2">
+      <% for(let i = 0; i < result.length; i++) { %>
+      <li class="flex justify-between items-center bg-gray-50 p-3 rounded-lg shadow" id="customer-<%= result[i]._id %>">
+        <span><%= result[i].name %> (<%= result[i]._id %>)</span>
+        <button onclick="removeItem('<%= result[i]._id %>')" class="text-red-600 hover:text-red-800">Remover</button>
+      </li>
+      <% } %>
+    </ul>
+
+    <div id="log" class="mt-5 text-sm text-gray-600"></div>
+  </div>
+
+  <script>
+    // Exibir span de confirmação
+    function showConfirmation(message) {
+      const confirmation = document.getElementById('confirmation');
+      confirmation.textContent = message;
+      confirmation.style.display = 'block';
+      setTimeout(() => {
+        confirmation.style.display = 'none';
+      }, 2000);
+    }
+
+    // Função para salvar cliente
+    function saveCustomer() {
+      const name = document.getElementById('name').value;
+      const age = document.getElementById('age').value;
+
+      fetch('/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: name, age: age })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Adicionar novo cliente na lista
+        const customerList = document.getElementById('customerList');
+        const newItem = document.createElement('li');
+        newItem.classList.add('flex', 'justify-between', 'items-center', 'bg-gray-50', 'p-3', 'rounded-lg', 'shadow');
+        newItem.id = `customer-${data.insertedId}`;
+        newItem.innerHTML = `
+          <span>${name} (${data.insertedId})</span>
+          <button onclick="removeItem('${data.insertedId}')" class="text-red-600 hover:text-red-800">Remover</button>
+        `;
+        customerList.appendChild(newItem);
+
+        // Feedback e reset do formulário
+        document.getElementById('log').innerText = 'Cliente cadastrado com sucesso!';
+        document.getElementById('saveForm').reset();
+        showConfirmation('Cliente cadastrado com sucesso!');
+      })
+      .catch(error => console.error('Erro:', error));
+    }
+
+    // Função para remover item
+    function removeItem(id) {
+      fetch('/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: id })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('log').innerText = 'Item removido com sucesso: ' + id;
+        // Remover o item da lista
+        document.getElementById('customer-' + id).remove();
+        showConfirmation('Item removido com sucesso!');
+      })
+      .catch(error => console.error('Erro:', error));
+    }
+  </script>
+
+</body>
+
+</html>
